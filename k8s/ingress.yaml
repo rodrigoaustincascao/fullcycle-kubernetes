@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1bet1
+kind: Ingress
+metadata:
+  name: ingress-host
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt" # <-- Nome definido do cluster-issuer
+    ingress.kubernetes.io/force-ssl-redirect: "true"
+spec:
+  rules:
+  - host: "ingress.fullcycle.com.br"
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          serviceName: goserver-service
+          servicePort: 80
+  tls: 
+  - hosts:
+    - "ingress.fullcycle.com.br"
+    secretName: letsencrypt-tls # <-- Nome definido no privateKeySecretRef do cluster-issuer.yaml

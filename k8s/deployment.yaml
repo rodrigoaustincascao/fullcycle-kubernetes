@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: goserver
+  labels:
+    app: goserver
+spec:
+  selector:
+    matchLabels:
+      app: goserver
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: "goserver"
+    spec:
+      containers:
+        - name: goserver
+          image: "racascao/hello-go:v5.1"
+
+          resources:
+            requests: # Reserva o minimo
+              cpu: 100m
+              memory: 20Mi
+            limits:
+              cpu: 500m
+              memory: 25Mi
+
+          
+          envFrom:
+            - configMapRef:
+                name: goserver-env
+            - secretRef:
+                name: goserver-secret
+          volumeMounts:
+            - mountPath: "/go/senhas"
+              name: config
+              readOnly: true
+            - mountPath: "/go/pvc"
+              name: goserver-pvc
+
+      volumes:
+        - name: goserver-pvc
+          persistentVolumeClaim:
+            claimName: goserver-pvc
+
+        - name: config
+          configMap:
+            name: configmap-senhas
+            items:
+            - key: senhas
+              path: "senhas.txt"
