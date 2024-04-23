@@ -1666,3 +1666,106 @@ kubectl apply -f k8s/ingress.yaml
 kubectl get certificates
 kubectl describe certificate letsencrypt-tls
 ```
+
+# Namespace
+
+```bash
+# listar todos os namespaces
+kubectl get ns
+
+# listar um namespace específico
+kubectl get pods -n=kube-system
+
+# Criar um namespace
+kubectl create ns desenvolvimento
+
+# Listar os pods por label
+kubectl get pods -l app=server
+
+# Exibir as configurações
+kubectl config view
+
+# Exibir o contexto atual
+kubectl config current-context
+
+# Criar um contexto
+kubectl config set-context dev --namespace=dev --cluster=kind-fullcycle --user=kind-fullcycle
+
+# Selecionar um contexto
+kubectl config use-context dev
+```
+
+# Service Accounts
+
+```bash
+# Listar as services accounts
+kubectl get serviceaccounts
+
+# Listar as APIGroup
+kubectl api-resources
+
+# security.yaml
+apiVersion: v1 
+kind: ServiceAccount
+metadata:
+  name: server
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role # <-- Caso a role seja para todo o cluster usar ClusterRole
+metadata:
+  name: server-read
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services"]
+  verbs: ["get", "watch", "list"]
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "watch", "list"]
+
+---
+# Realiza o bind do ServiceAccount com a Role
+apiVersion: rbac.authorization.k8s.io/v1 
+kind: RoleBinding # <-- Caso a role seja para todo o cluster usar ClusterRoleBinding
+metadata:
+  name: server-read-bind
+subjects:
+- kind: ServiceAccount
+  name: server 
+  namespace: prod
+roleRef:
+  kind: Role # <-- Caso a role seja para todo o cluster usar ClusterRole
+  name: server-read
+  apiGroup: rbac.authorization.k8s.io
+
+# deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: server
+spec:
+  selector:
+    matchLabels:
+      app: server
+  template:
+    metadata:
+      labels:
+        app: server
+    spec:
+      serviceAccount: server # <-- Vincula a role
+      containers:
+      - name: server
+        image: wesleywillians/hello-express
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 3000
+
+# Aplicar as configurações
+kubectl apply -f k8s/namespaces/security.yaml
+kubectl apply -f k8s/namespaces/deployment.yaml
+
+```
